@@ -14,8 +14,12 @@ app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_key_change_me')
 
 # База данных: на Render берётся из DATABASE_URL (PostgreSQL), локально - SQLite
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
+# Явно указываем драйвер psycopg2 (он есть в requirements.txt), иначе новые версии
+# SQLAlchemy могут искать другой драйвер и сервис не запустится
 if db_url.startswith('postgres://'):
-    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    db_url = db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+elif db_url.startswith('postgresql://'):
+    db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -262,9 +266,11 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username, password=password).first()
+        # убираем случайные пробелы и не различаем большие/маленькие буквы в логине
+        # (телефоны часто сами делают первую букву заглавной)
+        username = (request.form.get('username') or '').strip()
+        password = (request.form.get('password') or '').strip()
+        user = User.query.filter(db.func.lower(User.username) == username.lower(), User.password == password).first()
         if user:
             session['username'] = user.username
             session.permanent = True
