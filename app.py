@@ -14,8 +14,10 @@ app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_key_change_me')
 
 # База данных: на Render берётся из DATABASE_URL (PostgreSQL), локально - SQLite
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
-if db_url.startswith('postgres://'):
-    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+# Явно указываем драйвер psycopg2 (он есть в requirements.txt), что бы ни было записано
+# в начале адреса базы (postgres://, postgresql://, postgresql+psycopg://)
+if db_url.startswith('postgres'):
+    db_url = 'postgresql+psycopg2://' + db_url.split('://', 1)[1]
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
