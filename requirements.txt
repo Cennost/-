@@ -3,3 +3,4 @@ flask-sqlalchemy
 python-docx
 gunicorn
 psycopg2-binary
+psycopg[binary]
